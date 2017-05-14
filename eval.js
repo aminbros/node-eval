@@ -3,19 +3,20 @@ var isBuffer = Buffer.isBuffer
 
 var requireLike = require('require-like')
 
-function merge (a, b) {
+function merge (a, b, exclude) {
   if (!a || !b) return a
   var keys = Object.keys(b)
   for (var k, i = 0, n = keys.length; i < n; i++) {
     k = keys[i]
-    a[k] = b[k]
+    if(!exclude || !exclude.has(k))
+      a[k] = b[k]
   }
   return a
 }
 
 // Return the exports/module.exports variable set in the content
 // content (String|VmScript): required
-module.exports = function (content, filename, scope, includeGlobals) {
+module.exports = function (content, filename, scope, includeGlobals, excludeGlobals) {
 
   if (typeof filename !== 'string') {
     if (typeof filename === 'object') {
@@ -34,8 +35,9 @@ module.exports = function (content, filename, scope, includeGlobals) {
   var exports = {}
 
   if (includeGlobals) {
-    merge(sandbox, global)
-    sandbox.require = requireLike(filename || module.parent.filename)
+    merge(sandbox, global, excludeGlobals)
+    if(!excludeGlobals || !excludeGlobals.has('require'))
+      sandbox.require = requireLike(filename || module.parent.filename)
   }
 
   if (typeof scope === 'object') {
